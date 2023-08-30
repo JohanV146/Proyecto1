@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include <ctype.h>
+#include "cJSON.h"
+#include "users.h"
 
 int main()
 {
@@ -8,11 +12,11 @@ int main()
 
     do
     {
-        printf( "\n   1. Gestión de catálogo");
-        printf( "\n   2. Gestión de usuarios");
-        printf( "\n   3. Historial de préstamos");
-        printf( "\n   4. Vencimiento de préstamos");
-        printf( "\n   5. Estadísticas");
+        printf( "\n   1. Gestion de catalogo");
+        printf( "\n   2. Gestion de usuarios");
+        printf( "\n   3. Historial de prestamos");
+        printf( "\n   4. Vencimiento de prestamos");
+        printf( "\n   5. Estadisticas");
         printf( "\n   6. Volver" );
         printf( "\n\n   Introduzca opcion (1-6): ");
 
@@ -24,7 +28,8 @@ int main()
             case 1: 
                 break;
 
-            case 2: 
+            case 2:
+                addUser();
                 break;
 
             case 3: 
