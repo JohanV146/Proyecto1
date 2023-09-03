@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 struct Book {
     char *name;
     char *author;
@@ -7,11 +9,11 @@ struct Book {
     int quantity;
 };
 
-// Abre el archivo JSON y lo prepara para escritura
+// Abre el archivo
 FILE *openJsonFile(const char *filename) {
     FILE *file = fopen(filename, "r+");
     if (file == NULL) {
-        perror("Error al abrir el archivo JSON");
+        perror("Error al abrir el archivo");
         exit(1);
     }
 }
@@ -23,11 +25,10 @@ void addjsonBook(FILE *file, const int id, const char *name, const char *author,
     long fileSize = ftell(file);
 
     if (fileSize > 0) {
-        long dataLength = 9; // Longitud de los datos a agregar
-        fseek(file, -dataLength, SEEK_END);
+        fseek(file, -9, SEEK_END);
         fprintf(file, ",\n");
     } else {
-        fprintf(file, "{\n"); // Abrir el objeto JSON
+        fprintf(file, "{\n");
         fprintf(file, "\t\"books\": [\n"); // Iniciar el arreglo "books"
     }
 
@@ -45,11 +46,10 @@ void addjsonBook(FILE *file, const int id, const char *name, const char *author,
     fprintf(file, "}\n"); 
 }
 
-// Valida si el nombre ya existe en el archivo JSON
-int isNameAlreadyInFile(FILE *file, const char *bookName) {
-    fseek(file, 0, SEEK_SET);   // Asegura que el puntero esté al inicio del archivo
+// Valida si el nombre ya existe en el archivo
+bool existName(FILE *file, const char *bookName) {
+    fseek(file, 0, SEEK_SET);   // pocisiona el puntero al inicio del archivo
 
-    // Leer el contenido del archivo en una cadena de caracteres
     char *fileContent = NULL;
     size_t fileSize = 0;
 
@@ -58,10 +58,6 @@ int isNameAlreadyInFile(FILE *file, const char *bookName) {
     fseek(file, 0, SEEK_SET);
 
     fileContent = (char *)malloc(fileSize + 1);
-    if (fileContent == NULL) {
-        fclose(file);
-        return 0; // Error en la asignación de memoria
-    }
 
     fread(fileContent, 1, fileSize, file);
     fileContent[fileSize] = '\0';
@@ -70,13 +66,13 @@ int isNameAlreadyInFile(FILE *file, const char *bookName) {
     free(fileContent);
 
     if (root == NULL) {
-        return 0; // Error al parsear el archivo JSON
+        return false; // Error al parsear el archivo JSON
     }
 
     cJSON *usersArray = cJSON_GetObjectItem(root, "books");
     if (usersArray == NULL) {
         cJSON_Delete(root);
-        return 0; // No se encontró el arreglo "books"
+        return false;
     }
 
     int userCount = cJSON_GetArraySize(usersArray);
@@ -85,45 +81,45 @@ int isNameAlreadyInFile(FILE *file, const char *bookName) {
         cJSON *idObj = cJSON_GetObjectItem(user, "name");
         if (idObj != NULL && strcmp(idObj->valuestring, bookName) == 0) {
             cJSON_Delete(root);
-            return 1; // Usuario ya existe en el archivo
+            return true; // Usuario ya existe en el archivo
         }
     }
 
     cJSON_Delete(root);
-    return 0; // Usuario no encontrado en el archivo
+    return false;
 }
 
 int getLastId() {
-    FILE *idFile = fopen("last.txt", "r+");
-    if (idFile == NULL) {
-        // Si el archivo no existe, crea uno y establece el ID inicial en 1
-        idFile = fopen("last.txt", "w");
-        if (idFile == NULL) {
-            perror("Error al crear el archivo last.txt");
+    FILE *fileId = fopen("last.txt", "r+");
+    if (fileId == NULL) {
+        // Si el archivo no existe, crea uno
+        fileId = fopen("last.txt", "w");
+        if (fileId == NULL) {
+            perror("Error al crear el archivo");
             exit(1);
         }
-        fprintf(idFile, "1");
+        fprintf(fileId, "1");
     }
 
     int lastId;
-    if (fscanf(idFile, "%d", &lastId) != 1) {
+    if (fscanf(fileId, "%d", &lastId) != 1) {
         perror("Error al leer el ultimo ID");
-        fclose(idFile);
+        fclose(fileId);
         exit(1);
     }
 
-    fclose(idFile); // Cierra el archivo después de leerlo o actualizarlo
+    fclose(fileId);
 
     return lastId;
 }
 
 int addBook() {
-    char *direccion;
-    direccion = (char *)malloc(100 * sizeof(char));
+    char *adress;
+    adress = (char *)malloc(100 * sizeof(char));
     printf("Ingrese la direccion donde se encuentra el archivo: ");
-    scanf(" %[^\n]", direccion);
+    scanf(" %[^\n]", adress);
     fflush(stdin);
-    FILE *file = fopen(direccion, "r");
+    FILE *file = fopen(adress, "r");
 
     if (file == NULL) {
         printf("Error al abrir el archivo.\n");
@@ -133,12 +129,12 @@ int addBook() {
     FILE *jsonFile = openJsonFile("libros.json");
 
     struct Book book;
-    int maxId = getLastId();
+    int lastId = getLastId();
     char line[255];
     
     while (fgets(line, sizeof(line), file) != NULL) {
         char *token = strtok(line, "|");
-        if (!isNameAlreadyInFile(jsonFile, token)) {
+        if (!existName(jsonFile, token)) {
             book.name = strdup(token);
 
             token = strtok(NULL, "|");
@@ -156,24 +152,24 @@ int addBook() {
             token = strtok(NULL, "|");
             book.quantity = atoi(token);
 
-            addjsonBook(jsonFile, maxId, book.name, book.author, book.year, book.genre, book.summary, book.quantity);
+            addjsonBook(jsonFile, lastId, book.name, book.author, book.year, book.genre, book.summary, book.quantity);
 
             free(book.name);
             free(book.author);
             free(book.genre);
             free(book.summary);
 
-            maxId++;
+            lastId++;
         }
     }
 
-    FILE *idFile = fopen("last.txt", "r+");
-    if (idFile == NULL) {
-        perror("Error al abrir el archivo last.txt para actualizacion");
+    FILE *fileId = fopen("last.txt", "r+");
+    if (fileId == NULL) {
+        perror("Error al abrir el archivo");
         exit(1);
     }
-    fprintf(idFile, "%d", maxId); // Actualiza el ID
-    fclose(idFile);
+    fprintf(fileId, "%d", lastId);
+    fclose(fileId);
 
     fclose(file);
     fclose(jsonFile);
