@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "cJSON.h"
 #include "users.h"
+#include "book.h"
 
 int main()
 {
@@ -26,6 +27,7 @@ int main()
         switch ( opcion )
         {
             case 1: 
+                addBook();
                 break;
 
             case 2:
