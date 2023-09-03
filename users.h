@@ -1,39 +1,38 @@
+#include <stdbool.h>
+
 struct User {
     char *id;
     char *name;
     char *address;
 };
 
-//valida que el id sea calido, que contenga 9 diguitos y que los digitos sean validos
-int isValidId(const char *input) {
+//valida que el id sea valido, que contenga 9 digitos y que los digitos sean validos
+bool validateId(const char *id) {
     // Verifica si la cadena tiene exactamente 9 caracteres y si todos son dígitos
-    if (strlen(input) != 9) {
-        return 0;
+    if (strlen(id) != 9) {
+        return false;
     }
-    for (size_t i = 0; i < strlen(input); i++) {
-        if (!isdigit(input[i])) {
-            return 0;
+    for (int i = 0; i < strlen(id); i++) {
+        if (!isdigit(id[i])) {
+            return false;
         }
     }
-    return 1;
+    return true;
 }
 
 //valida que el usuario no exista en el archivo json
-int isUserAlreadyInFile(const char *fileName, const char *userId) {
-    FILE *file = fopen(fileName, "r");
-    if (file == NULL) {
-        return 0; // El archivo no existe
+bool existId(const char *fileName, const char *userId) {
+    FILE *file = fopen(fileName, "r"); // abre el archivo
+    if (file == NULL) { // verifica de que el archivo exista
+        printf("El archivo no existe\n");
+        return false; 
     }
 
-    fseek(file, 0, SEEK_END);
-    long fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    fseek(file, 0, SEEK_END);   // Mueve el puntero al final del archivo
+    long fileSize = ftell(file);    // Obtiene la cantidad de bytes del archivo
+    fseek(file, 0, SEEK_SET);   // El puntero regresa al inicio luego de obtener el tamaño del archivo
 
     char *fileContent = (char *)malloc(fileSize + 1);
-    if (fileContent == NULL) {
-        fclose(file);
-        return 0; // Error en la asignación de memoria
-    }
 
     fread(fileContent, 1, fileSize, file);
     fileContent[fileSize] = '\0';
@@ -44,41 +43,41 @@ int isUserAlreadyInFile(const char *fileName, const char *userId) {
     free(fileContent);
 
     if (root == NULL) {
-        return 0; // Error al parsear el archivo JSON
+        return false;
     }
 
     cJSON *usersArray = cJSON_GetObjectItem(root, "users");
     if (usersArray == NULL) {
         cJSON_Delete(root);
-        return 0; // No se encontró el arreglo "users"
+        return false;
     }
 
     int userCount = cJSON_GetArraySize(usersArray);
     for (int i = 0; i < userCount; i++) {
         cJSON *user = cJSON_GetArrayItem(usersArray, i);
-        cJSON *idObj = cJSON_GetObjectItem(user, "id");
-        if (idObj != NULL && strcmp(idObj->valuestring, userId) == 0) {
+        cJSON *idUser = cJSON_GetObjectItem(user, "id");
+        if (idUser != NULL && strcmp(idUser->valuestring, userId) == 0) {
             cJSON_Delete(root);
-            return 1; // Usuario ya existe en el archivo
+            return true;
         }
     }
 
     cJSON_Delete(root);
-    return 0; // Usuario no encontrado en el archivo
+    return false;
 }
 
 //agrega los datos al archivo json
-int addjson(const char *id, const char *name, const char *address) {
+void addjson(const char *id, const char *name, const char *address) {
     FILE *file = fopen("usuarios.json", "r+");
     if (file != NULL) {
         fseek(file, 0, SEEK_END);
         long fileSize = ftell(file);
         
         if (fileSize > 0) {
-            fseek(file, -9, SEEK_END); // Mover el puntero tres pasos antes del cierre del último elemento
+            fseek(file, -9, SEEK_END); // Mover el puntero 9 pasos antes del cierre del último elemento
             fprintf(file, ",\n"); // Agregar una coma y un salto de línea antes del nuevo usuario
         } else {
-            fprintf(file, "{\n"); // Abrir el objeto JSON
+            fprintf(file, "{\n");
             fprintf(file, "\t\"users\": [\n"); // Iniciar el arreglo "users"
         }
         
@@ -88,19 +87,14 @@ int addjson(const char *id, const char *name, const char *address) {
         fprintf(file, "\t\t\t\"address\": \"%s\"\n", address);
         fprintf(file, "\t\t}\n");
 
-        if (fileSize > 0) {
-            fprintf(file, "\t]\n"); // Cerrar el arreglo "users"
-            fprintf(file, "}\n"); // Cerrar el objeto JSON
-        } else {
-            fprintf(file, "\t]\n"); // Cerrar el arreglo "users"
-            fprintf(file, "}\n"); // Cerrar el objeto JSON
-        }
+        fprintf(file, "\t]\n"); // Cerrar el arreglo "users"
+        fprintf(file, "}\n");
 
         fclose(file);
 
-        return 0;
+        printf("Se agrego exitosamente.\n");
     } else {
-        return 1; // Error al abrir el archivo
+        printf("No se pudo abrir el archivo\n");
     }
 }
 
@@ -110,21 +104,16 @@ void addUser() {
     struct User *temp = (struct User *)malloc(sizeof(struct User));
     char idT[10];
 
-    if (temp == NULL) {
-        printf("Error al asignar memoria.\n");
-        return;
-    }
-
     while (1) {
         printf("Ingrese su numero de cedula (9 digitos): ");
         scanf("%9s", idT);
         fflush(stdin);
         
-        if (isValidId(idT) && !isUserAlreadyInFile("usuarios.json", idT)) {
+        if (validateId(idT) && !existId("usuarios.json", idT)) {
             break; // Salir del bucle si la cédula es válida y el usuario no existe
         } else {
-            if (!isValidId(idT)) {
-                printf("Cedula no valida. Debe ser un valor numerico de 9 digitos.\n");
+            if (!validateId(idT)) {
+                printf("La cedula no es valida, debe ser un valor numerico de 9 digitos.\n");
             } else {
                 printf("El usuario ya existe.\n");
             }
@@ -134,7 +123,7 @@ void addUser() {
     temp->id = strdup(idT);
 
     temp->name = (char *)malloc(100 * sizeof(char));
-    printf("Ingrese su numero de nombre: ");
+    printf("Ingrese su nombre: ");
     scanf(" %[^\n]", temp->name);
     fflush(stdin);
 
@@ -143,19 +132,9 @@ void addUser() {
     scanf(" %[^\n]", temp->address);
     fflush(stdin);
 
-    if (addjson(temp->id, temp->name, temp->address) == 0) {
-        printf("Se agrego exitosamente.\n");
-    }
+    addjson(temp->id, temp->name, temp->address);
 
     free(temp->name);
     free(temp->address);
     free(temp);
-}
-
-//libera la memoria de las variables
-void freeUser(struct User *user) {
-    free(user->id);
-    free(user->name);
-    free(user->address);
-    free(user);
 }
