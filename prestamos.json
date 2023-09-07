@@ -1,0 +1,24 @@
+{
+	"loans":	[
+		{
+			"id":	1,
+			"userIdT":	"123456789",
+			"bookIdT":	5,
+			"name":	"1984",
+			"startDate":	"09-01-2023",
+			"endDate":	"09-03-2023",
+			"tardia":	"No",
+			"estado":	"finalizado"
+		}, 
+		{
+			"id":	2,
+			"userIdT":	"123456789",
+			"bookIdT":	5,
+			"name":	"1984",
+			"startDate":	"09-01-2023",
+			"endDate":	"09-03-2023",
+			"tardia":	"No",
+			"estado":	"finalizado"
+		}
+	]
+}

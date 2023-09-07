@@ -1,13 +1,5 @@
 #include <time.h>
 
-struct LoanT {
-    int id;
-    char idUser[10];
-    int bookId;
-    char startDate[20];
-    char endDate[20];
-};
-
 struct Loan {
     int id;
     char idUser[10];
@@ -160,11 +152,11 @@ struct BookT *loadBooks(const char *fileName, int *numBooks) {
 bool isAvailable2(const struct Loan *loans, int numLoans, int idBook, const char *startDateN) {
     for (int i = 0; i < numLoans; i++) {
         if (loans[i].bookId == idBook) {
-            struct tm tm1, tm2;
+            struct tm tm1 = {0}, tm2 = {0};
             const char *endDateStr = loans[i].endDate;
 
-            if (sscanf(endDateStr, "%d-%d-%d", &tm1.tm_mday, &tm1.tm_mon, &tm1.tm_year) != 3 ||
-                sscanf(startDateN, "%d-%d-%d", &tm2.tm_mday, &tm2.tm_mon, &tm2.tm_year) != 3) {
+            if (sscanf(endDateStr, "%2d-%2d-%4d", &tm1.tm_mon, &tm1.tm_mday, &tm1.tm_year) != 3 ||
+                sscanf(startDateN, "%2d-%2d-%4d", &tm2.tm_mon, &tm2.tm_mday, &tm2.tm_year) != 3) {
                 return false;
             }
 
@@ -199,7 +191,7 @@ void getCurrentDate(char *currentDate) {
     time(&t);
     temp = localtime(&t);
 
-    strftime(currentDate, 20, "%d-%m-%Y", temp); // Formato DD-MM-AAAA
+    strftime(currentDate, 11, "%m-%d-%Y", temp); // Formato MM-DD-AAAA
 }
 
 // valida si un año es bisiesto
@@ -209,9 +201,9 @@ bool isLeapYear(int year) {
 
 // valida si una fecha es válida
 bool isValidDate(const char *date) {
-    int day, month, year;
-    if (sscanf(date, "%d-%d-%d", &day, &month, &year) != 3) {
-        return false; // No se pudo leer día, mes y año correctamente.
+    int month, day, year;
+    if (sscanf(date, "%2d-%2d-%4d", &month, &day, &year) != 3) {
+        return false; // No se pudo leer mes, día y año correctamente.
     }
 
     if (year < 0 || month < 1 || month > 12 || day < 1) {
@@ -252,7 +244,7 @@ bool isValidDateFormat(const char *date) {
 // valida que la fecha sea valida
 bool getValidDate(char *date) {
     if (isValidDateFormat(date) && isValidDate(date)) {
-        char currentDate[20];
+        char currentDate[11];
         getCurrentDate(currentDate);
 
         if (strcmp(date, currentDate) >= 0) {
@@ -269,8 +261,8 @@ bool isEndDateValid(const char *startDate, const char *endDate) {
     memset(&startTm, 0, sizeof(struct tm));
     memset(&endTm, 0, sizeof(struct tm));
 
-    if (sscanf(startDate, "%d-%d-%d", &startTm.tm_mday, &startTm.tm_mon, &startTm.tm_year) != 3 ||
-        sscanf(endDate, "%d-%d-%d", &endTm.tm_mday, &endTm.tm_mon, &endTm.tm_year) != 3) {
+    if (sscanf(startDate, "%2d-%2d-%4d", &startTm.tm_mon, &startTm.tm_mday, &startTm.tm_year) != 3 ||
+        sscanf(endDate, "%2d-%2d-%4d", &endTm.tm_mon, &endTm.tm_mday, &endTm.tm_year) != 3) {
         return false;
     }
 
@@ -425,12 +417,12 @@ void addjsonLoan(const int id, const char *userIdT, const int bookIdT, const cha
         fprintf(file, "\t\t{\n");
         fprintf(file, "\t\t\t\"id\": %d,\n", id); 
         fprintf(file, "\t\t\t\"userIdT\": \"%s\",\n", userIdT);
-        fprintf(file, "\t\t\t\"bookIdT\": \"%d\",\n", bookIdT);
+        fprintf(file, "\t\t\t\"bookIdT\": %d,\n", bookIdT);
         fprintf(file, "\t\t\t\"name\": \"%s\",\n", name);
-        fprintf(file, "\t\t\t\"startDate\": %s,\n", startDateT); 
+        fprintf(file, "\t\t\t\"startDate\": \"%s\",\n", startDateT); 
         fprintf(file, "\t\t\t\"endDate\": \"%s\",\n", endDateT);
         fprintf(file, "\t\t\t\"estado\": \"%s\",\n", estado);
-        fprintf(file, "\t\t\t\"tardia\": \"%s\",\n", tardia);
+        fprintf(file, "\t\t\t\"tardia\": \"%s\"\n", tardia);
         fprintf(file, "\t\t}\n");
 
         fprintf(file, "\t]\n");
@@ -488,7 +480,7 @@ void addLoan() {
     }
 
     while (1) {
-        printf("Ingrese la fecha de inicio (DD-MM-AAAA): ");
+        printf("Ingrese la fecha de inicio (MM-DD-AAAA): ");
         scanf("%19s", loans->startDate);
         fflush(stdin);
 
@@ -500,7 +492,7 @@ void addLoan() {
     }
 
     while (1) {
-        printf("Ingrese la fecha de finalizacion (DD-MM-AAAA): ");
+        printf("Ingrese la fecha de finalizacion (MM-DD-AAAA): ");
         scanf("%19s", loans->endDate);
         fflush(stdin);
 
@@ -516,14 +508,9 @@ void addLoan() {
     char *nameT = returnName(books, numBooks, loans->bookId);
 
     if (isAvailable(books, numBooks, loans->bookId) || isAvailable2(loansT, numLoans, loans->bookId, loans->startDate)) {
-        if (isAvailable(books, numBooks, loans->bookId)) {
-            Modify("libros.json", loans->bookId);
-            addjsonLoan(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, "activo", nameT, estado);
-            comprobante(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, nameT);
-        } else if (isAvailable2(loansT, numLoans, loans->bookId, loans->startDate)) {
-            addjsonLoan(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, "activo", nameT, estado);
-            comprobante(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, nameT);
-        }
+        Modify("libros.json", loans->bookId);
+        addjsonLoan(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, "activo", nameT, estado);
+        comprobante(lastId, loans->idUser, loans->bookId, loans->startDate, loans->endDate, nameT);
     } else {
         printf("No se puede realizar el préstamo para estas fechas.\n");
     }

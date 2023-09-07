@@ -1,0 +1,27 @@
+{
+	"books":	[{
+			"id":	4,
+			"name":	"Cien años de soledad",
+			"author":	"Gabriel García Márquez",
+			"year":	1967,
+			"genre":	"Realismo mágico",
+			"summary":	"Esta novela cuenta la historia",
+			"quantity":	4
+		}, {
+			"id":	5,
+			"name":	"1984",
+			"author":	"George Orwell",
+			"year":	1949,
+			"genre":	"Distopía",
+			"summary":	"En un futuro totalitario, el protagonista lucha contra el régimen",
+			"quantity":	2
+		}, {
+			"id":	6,
+			"name":	"Orgullo y prejuicio",
+			"author":	"Jane Austen",
+			"year":	1813,
+			"genre":	"Novela romántica",
+			"summary":	"La historia sigue Elizabeth Bennet mientras",
+			"quantity":	2
+		}]
+}
